@@ -1,4 +1,6 @@
+from contextlib import contextmanager
 from typing import Optional
+
 
 class Terminal:
     """A class for colorizing text output to the terminal.
@@ -31,13 +33,10 @@ class Terminal:
 
     def set_terminal_color(self, color: str) -> None:
         """Set the terminal text color.
-
         Args:
             color (str): The desired text color.
-
         Returns:
             None
-
         Note:
             The text color will remain changed until reset() is called.
         """
@@ -45,88 +44,73 @@ class Terminal:
 
     def reset(self) -> None:
         """Reset the terminal text color to its default value.
-
         Args:
             None
-
         Returns:
             None
         """
         print("{}".format(self.colors["reset"]), end="")
 
-    def print_note(self, message: str) -> None:
-        """Print a notification message in green.
-
+    @contextmanager
+    def colored(self, color: Optional[str] = "default"):
+        """A context manager for setting and resetting the terminal color.
         Args:
-            message (str): The message to print.
-
+            color (str, optional): The desired text color. Defaults to "default".
         Returns:
             None
         """
-        self.set_terminal_color("green")
-        print("[NOTE] {}".format(message))
-        self.reset()
+        try:
+            self.set_terminal_color(color)
+            yield
+        finally:
+            self.reset()
 
-    def print_warning(self, message: str) -> None:
-        """Print a warning message in yellow.
-
-        Args:
-            message (str): The message to print.
-
-        Returns:
-            None
-        """
-        self.set_terminal_color("yellow")
-        print("[WARNING] {}".format(message))
-        self.reset()
-
-    def print_error(self, message: str) -> None:
-        """Print an error message in red.
-
-        Args:
-            message (str): The message to print.
-
-        Returns:
-            None
-        """
-        self.set_terminal_color("red")
-        print("[ERROR] {}".format(message))
-        self.reset()
-
-    def cprint(self, message: str, color: Optional[str] = "default") -> None:
+    def print_colored(self, message: str, color: Optional[str] = "default", end: str = "\n") -> None:
         """Print a message in the specified color.
-
         Args:
             message (str): The message to print.
             color (str, optional): The desired text color. Defaults to "default".
-
+            end (str, optional): The string appended after the last value, defaults to newline.
         Returns:
             None
+        Raises:
+            ValueError: If an invalid color is specified.
         """
         if color in self.colors.keys():
-            self.set_terminal_color(color)
-            print(message)
-            self.reset()
+            with self.colored(color):
+                print(message, end=end)
         else:
-            self.set_terminal_color("red")
-            print("[ERROR] Invalid color specified.")
-            self.reset()
+            with self.colored():
+                print(message, end=end)
+
 
 if __name__ == "__main__":
     # Terminal クラスのインスタンスを作成
     terminal = Terminal()
 
     # 通知メッセージ（緑色）を出力
-    terminal.print_note("This is a notification message.")
+    terminal.print_colored("[NOTE] This is a notification message.", "green")
 
     # 警告メッセージ（黄色）を出力
-    terminal.print_warning("This is a warning message.")
+    terminal.print_colored("[WARNING] This is a warning message.", "yellow")
 
     # エラーメッセージ（赤色）を出力
-    terminal.print_error("This is an error message.")
+    terminal.print_colored("[ERROR] This is an error message.", "red")
 
     # カスタムカラーでメッセージを出力（例: 青色）
-    terminal.cprint("This is a custom-colored message.", "blue")
+    terminal.print_colored("This is a custom-colored message.", "blue")
 
     # 無効な色を指定した場合のエラーメッセージを出力
-    terminal.cprint("This is an invalid color example.", "not_a_color")
+    terminal.print_colored("[ERROR] Invalid color specified.", "not_a_color")
+
+    words = [
+        ("Hello", "lightblue"),
+        ("beautiful", "lightmagenta"),
+        ("world!", "lightgreen"),
+    ]
+
+    for index, (word, color) in enumerate(words):
+        if index == len(words) - 1:
+            terminal.print_colored(word, color)
+        else:
+            terminal.print_colored(word, color, end=" ")
